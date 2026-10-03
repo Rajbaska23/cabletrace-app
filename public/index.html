@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CableTrace Enterprise - Project Review Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
+
+  <!-- AUTHENTICATION SCREEN -->
+  <div id="screenLogin" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md p-8 rounded-2xl shadow-2xl space-y-6">
+      <div class="text-center space-y-2">
+        <div class="inline-flex items-center justify-center bg-blue-600 text-white p-3 rounded-xl shadow-lg">
+          <i class="fa-solid fa-bolt text-2xl"></i>
+        </div>
+        <h1 class="text-xl font-bold text-slate-100">CableTrace Enterprise</h1>
+        <p class="text-xs text-slate-400">33kV Cable Circuit Management System</p>
+      </div>
+
+      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">User ID / Username</label>
+          <input type="text" id="inputUsername" required placeholder="Enter User ID" 
+            class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Password</label>
+          <input type="password" id="inputPassword" required placeholder="••••••••••••" 
+            class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500">
+        </div>
+        <div id="loginError" class="hidden text-red-400 text-[11px] bg-red-950/50 border border-red-800 p-2 rounded">
+          Invalid credentials. Please select from quick demo users.
+        </div>
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg text-xs transition">
+          Sign In to Project Portal
+        </button>
+      </form>
+
+      <div class="border-t border-slate-800 pt-3 space-y-2 text-[11px]">
+        <div class="text-[10px] text-slate-500 uppercase font-bold text-center">Quick Credentials Selector</div>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="fillAuth('admin', 'Admin@Cable2026!')" class="bg-slate-800 p-2 rounded text-left border border-slate-700 hover:bg-slate-700">
+            <div class="font-bold text-amber-400"><i class="fa-solid fa-shield-halved"></i> Admin</div>
+            <div class="text-[9px] text-slate-400">admin / Admin@...</div>
+          </button>
+          <button onclick="fillAuth('pm_lead', 'PM#Trace2026')" class="bg-slate-800 p-2 rounded text-left border border-slate-700 hover:bg-slate-700">
+            <div class="font-bold text-blue-400"><i class="fa-solid fa-user-tie"></i> Project Mgr</div>
+            <div class="text-[9px] text-slate-400">pm_lead / PM#...</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD MAIN SHELL -->
+  <div id="screenDashboard" class="hidden min-h-screen flex flex-col">
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center sticky top-0 z-40">
+      <div class="flex items-center space-x-3">
+        <div class="bg-blue-600 text-white p-2 rounded-lg font-bold"><i class="fa-solid fa-bolt"></i></div>
+        <div>
+          <h1 class="text-sm font-bold">33kV Feeder Cable Circuit - Line 1</h1>
+          <p class="text-[11px] text-slate-400">Northern Cluster • ID: <span class="text-blue-400 font-mono">CT-2026-001</span></p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3 text-xs">
+        <span id="userBadge" class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 font-bold text-amber-400"></span>
+        <button id="btnReport" onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded font-bold">
+          Executive Report (PDF/PPT)
+        </button>
+        <button onclick="logout()" class="bg-slate-800 hover:bg-red-900/40 text-slate-300 p-2 rounded border border-slate-700"><i class="fa-solid fa-right-from-bracket"></i></button>
+      </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+      <aside class="w-64 bg-slate-900/80 border-r border-slate-800 p-4 space-y-2 shrink-0">
+        <button id="navAdmin" onclick="switchSection('secAdmin')" class="w-full text-left p-2.5 rounded text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 flex justify-between">
+          <span><i class="fa-solid fa-sliders me-2"></i> Admin Setup</span>
+          <span class="text-[9px] bg-amber-900 text-amber-200 px-1 rounded">ADMIN</span>
+        </button>
+        <button onclick="switchSection('secPM')" class="w-full text-left p-2.5 rounded text-xs font-bold text-slate-300 hover:bg-slate-800">
+          <i class="fa-solid fa-chart-pie me-2"></i> Master SLD View
+        </button>
+      </aside>
+
+      <main class="flex-1 overflow-y-auto p-6 space-y-6">
+        <!-- ADMIN SETUP MODULE -->
+        <section id="secAdmin" class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+          <h2 class="font-bold text-amber-400 text-sm"><i class="fa-solid fa-shield-halved me-2"></i> Admin Setup & Ingestion</h2>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="border-2 border-dashed border-slate-700 p-4 rounded text-center bg-slate-950/40 cursor-pointer">
+              <i class="fa-solid fa-map-location-dot text-blue-400 text-xl mb-1"></i>
+              <div class="text-xs font-bold">Upload CAD (.DXF)</div>
+            </div>
+            <div class="border-2 border-dashed border-slate-700 p-4 rounded text-center bg-slate-950/40 cursor-pointer">
+              <i class="fa-solid fa-file-excel text-emerald-400 text-xl mb-1"></i>
+              <div class="text-xs font-bold">Upload BOQ (.XLSX)</div>
+            </div>
+            <div class="border-2 border-dashed border-slate-700 p-4 rounded text-center bg-slate-950/40 cursor-pointer">
+              <i class="fa-solid fa-file-pdf text-red-400 text-xl mb-1"></i>
+              <div class="text-xs font-bold">Upload Specs (.PDF)</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- MASTER SLD MODULE -->
+        <section id="secPM" class="space-y-6 hidden">
+          <div class="grid grid-cols-4 gap-4">
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+              <div class="text-[10px] text-slate-400 font-bold uppercase">Cable Pulling</div>
+              <div class="text-lg font-mono text-emerald-400 font-bold">680m / 1,250m</div>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+              <div class="text-[10px] text-slate-400 font-bold uppercase">Civil Trenching</div>
+              <div class="text-lg font-mono text-blue-400 font-bold">920m (73.6%)</div>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+              <div class="text-[10px] text-slate-400 font-bold uppercase">Open NCRs</div>
+              <div class="text-lg font-mono text-amber-400 font-bold">1 NCR (JB-01)</div>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+              <div class="text-[10px] text-slate-400 font-bold uppercase">PO Status</div>
+              <div class="text-lg font-mono text-slate-100 font-bold">Released</div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+            <h2 class="text-xs font-bold text-slate-200 mb-3 uppercase"><i class="fa-solid fa-network-wired text-blue-400 me-2"></i> Master Single Line Diagram (SLD)</h2>
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-center">
+              <svg width="700" height="100" viewBox="0 0 700 100">
+                <line x1="50" y1="50" x2="250" y2="50" stroke="#10B981" stroke-width="6"/>
+                <line x1="250" y1="50" x2="450" y2="50" stroke="#F59E0B" stroke-width="6" stroke-dasharray="5 3"/>
+                <line x1="450" y1="50" x2="650" y2="50" stroke="#475569" stroke-width="6"/>
+                <circle cx="250" cy="50" r="12" fill="#1e293b" stroke="#EF4444" stroke-width="2"/>
+                <circle cx="450" cy="50" r="12" fill="#1e293b" stroke="#F59E0B" stroke-width="2"/>
+                <text x="250" y="54" text-anchor="middle" fill="#fff" font-size="8" font-weight="bold">JB-1</text>
+                <text x="450" y="54" text-anchor="middle" fill="#fff" font-size="8" font-weight="bold">JB-2</text>
+              </svg>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- REPORT MODAL -->
+  <div id="reportModal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md p-6 rounded-2xl space-y-4">
+      <h3 class="font-bold text-sm text-slate-100">Generate Executive Report</h3>
+      <div class="flex justify-end space-x-3">
+        <button onclick="genPDF()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-3 py-2 rounded text-xs">Download PDF</button>
+        <button onclick="genPPT()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 py-2 rounded text-xs">Download PPTX</button>
+        <button onclick="closeModal()" class="bg-slate-800 text-slate-300 font-bold px-3 py-2 rounded text-xs">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const USERS = {
+      'admin': { pass: 'Admin@Cable2026!', role: 'ADMIN', name: 'Admin User' },
+      'pm_lead': { pass: 'PM#Trace2026', role: 'PM', name: 'Project Manager' }
+    };
+    let activeUser = null;
+
+    function fillAuth(u, p) {
+      document.getElementById('inputUsername').value = u;
+      document.getElementById('inputPassword').value = p;
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('inputUsername').value.trim();
+      const p = document.getElementById('inputPassword').value.trim();
+      if (USERS[u] && USERS[u].pass === p) {
+        activeUser = USERS[u];
+        document.getElementById('screenLogin').classList.add('hidden');
+        document.getElementById('screenDashboard').classList.remove('hidden');
+        document.getElementById('userBadge').innerText = activeUser.name;
+        if (activeUser.role === 'ADMIN') {
+          document.getElementById('navAdmin').classList.remove('hidden');
+          switchSection('secAdmin');
+        } else {
+          document.getElementById('navAdmin').classList.add('hidden');
+          switchSection('secPM');
+        }
+      } else {
+        document.getElementById('loginError').classList.remove('hidden');
+      }
+    }
+
+    function logout() {
+      document.getElementById('screenDashboard').classList.add('hidden');
+      document.getElementById('screenLogin').classList.remove('hidden');
+    }
+
+    function switchSection(secId) {
+      document.getElementById('secAdmin').classList.add('hidden');
+      document.getElementById('secPM').classList.add('hidden');
+      document.getElementById(secId).classList.remove('hidden');
+    }
+
+    function openModal() { document.getElementById('reportModal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('reportModal').classList.add('hidden'); }
+
+    function genPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("EXECUTIVE CABLE REVIEW", 14, 20);
+      doc.text("Route Length: 1,250m | Progress: 54.4%", 14, 30);
+      doc.save("Executive_Report.pdf");
+      closeModal();
+    }
+
+    function genPPT() {
+      let pptx = new PptxGenJS();
+      let slide = pptx.addSlide();
+      slide.addText("EXECUTIVE REVIEW", { x: 1, y: 1, fontSize: 24, color: "0088CC" });
+      pptx.writeFile({ fileName: "Executive_Deck.pptx" });
+      closeModal();
+    }
+  </script>
+</body>
+</html>
